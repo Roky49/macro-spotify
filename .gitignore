@@ -1,0 +1,19 @@
+# .NET
+bin/
+obj/
+
+# Python
+__pycache__/
+venv/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Descargas de música (volumen Docker → ./downloads)
+downloads/

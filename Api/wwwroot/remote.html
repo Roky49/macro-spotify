@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>🎵 Remote Control</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a1a;color:#e0e0e0;font-family:'Inter',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;padding:20px;user-select:none;-webkit-user-select:none}
+h1{font-size:1.5rem;margin-bottom:2rem;color:#1ed760}
+.remote{display:flex;flex-direction:column;align-items:center;gap:24px;max-width:320px;width:100%}
+.now-playing{text-align:center;margin-bottom:1rem;width:100%}
+.now-playing .title{font-size:1.1rem;font-weight:600;color:#fff}
+.now-playing .artist{color:#888;font-size:.9rem;margin-top:4px}
+.controls{display:flex;gap:20px;align-items:center;justify-content:center;width:100%}
+.controls button{width:64px;height:64px;border-radius:50%;border:none;font-size:1.5rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s,background .2s;-webkit-tap-highlight-color:transparent}
+.controls button:active{transform:scale(.9)}
+.btn-prev,.btn-next{background:#2a2a2a;color:#fff}
+.btn-play{width:80px;height:80px;background:#1ed760;color:#111;font-size:2rem}
+.volume{display:flex;align-items:center;gap:12px;width:100%;padding:0 16px}
+.volume input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:#333;outline:none}
+.volume input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#1ed760;cursor:pointer}
+.volume span{color:#888;font-size:.85rem;min-width:35px;text-align:center}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;margin-top:1rem}
+.actions button{padding:14px;border-radius:12px;border:none;background:#2a2a2a;color:#e0e0e0;font-size:1.1rem;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.actions button:active{background:#333}
+.connection{font-size:.8rem;color:#888;margin-top:2rem;text-align:center}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.dot.on{background:#1ed760}
+.dot.off{background:#555}
+</style>
+</head>
+<body>
+<div class="remote">
+  <h1>🎵 Remote</h1>
+  <div class="now-playing">
+    <div class="title" id="trackTitle">—</div>
+    <div class="artist" id="trackArtist">Conectando...</div>
+  </div>
+  <div class="controls">
+    <button class="btn-prev" onclick="send('previous')">⏮</button>
+    <button class="btn-play" id="playBtn" onclick="togglePlay()">▶️</button>
+    <button class="btn-next" onclick="send('skip')">⏭</button>
+  </div>
+  <div class="volume">
+    <span>🔈</span>
+    <input type="range" id="volumeSlider" min="0" max="100" value="50" oninput="setVolume(this.value)">
+    <span id="volLabel">50</span>
+  </div>
+  <div class="actions">
+    <button onclick="send('like')">❤️</button>
+    <button onclick="send('dislike')">💔</button>
+    <button onclick="send('shuffle')">🔀</button>
+    <button onclick="send('repeat')">🔁</button>
+  </div>
+  <div class="connection">
+    <span class="dot" id="statusDot"></span>
+    <span id="statusText">Conectando...</span>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+<script>
+const conn = new signalR.HubConnectionBuilder()
+  .withUrl('/hub/spotify')
+  .withAutomaticReconnect()
+  .build();
+
+let isPlaying = false;
+
+conn.on('Command', cmd => {
+  if (cmd === 'play') updatePlayState(true);
+  else if (cmd === 'pause') updatePlayState(false);
+  updateStatus('✅ Conectado');
+});
+
+conn.on('Volume', vol => { document.getElementById('volumeSlider').value = vol; document.getElementById('volLabel').textContent = vol; });
+
+conn.onreconnecting(() => updateStatus('🔄 Reconectando...', false));
+conn.onreconnected(() => updateStatus('✅ Conectado', true));
+conn.onclose(() => updateStatus('❌ Desconectado', false));
+
+conn.start().then(() => { updateStatus('✅ Conectado', true); }).catch(() => updateStatus('❌ Error de conexión', false));
+
+function send(command) { conn.invoke(capitalize(command)).catch(e => updateStatus('❌ ' + e.message, false)); }
+
+function togglePlay() {
+  if (isPlaying) { conn.invoke('Pause'); updatePlayState(false); }
+  else { conn.invoke('Play'); updatePlayState(true); }
+}
+
+function setVolume(v) { conn.invoke('SetVolume', parseInt(v)); document.getElementById('volLabel').textContent = v; }
+
+function updatePlayState(playing) { isPlaying = playing; document.getElementById('playBtn').textContent = playing ? '⏸' : '▶️'; }
+
+function updateStatus(text, ok) {
+  document.getElementById('statusText').textContent = text;
+  document.getElementById('statusDot').className = 'dot ' + (ok ? 'on' : 'off');
+}
+
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+// Keyboard shortcuts for testing
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+  if (e.code === 'ArrowLeft') send('previous');
+  if (e.code === 'ArrowRight') send('skip');
+  if (e.code === 'ArrowUp') setVolume(Math.min(100, parseInt(document.getElementById('volumeSlider').value) + 5));
+  if (e.code === 'ArrowDown') setVolume(Math.max(0, parseInt(document.getElementById('volumeSlider').value) - 5));
+});
+</script>
+</body></html>
