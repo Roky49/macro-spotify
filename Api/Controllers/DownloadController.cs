@@ -132,6 +132,8 @@ public class DownloadController : ControllerBase
             psi.ArgumentList.Add(req.Format ?? "mp3");
             psi.ArgumentList.Add("--audio-quality");
             psi.ArgumentList.Add(req.Quality ?? "0"); // 0 = mejor
+            // YouTube bloquea el cliente web por defecto con HTTP 403 (anti-bot).
+            psi.ArgumentList.Add("--extractor-args"); psi.ArgumentList.Add("youtube:player_client=android");
             psi.ArgumentList.Add("-o");
             psi.ArgumentList.Add(outputTemplate);
             // Sin --no-playlist: si la URL es de una playlist, se descargan todas las canciones.
@@ -390,6 +392,9 @@ public class DownloadController : ControllerBase
             psi.ArgumentList.Add("-x");
             psi.ArgumentList.Add("--audio-format"); psi.ArgumentList.Add(format);
             psi.ArgumentList.Add("--audio-quality"); psi.ArgumentList.Add(quality);
+            // YouTube bloquea el cliente web por defecto con HTTP 403 (anti-bot).
+            // player_client=android evita el bloqueo y permite descargar.
+            psi.ArgumentList.Add("--extractor-args"); psi.ArgumentList.Add("youtube:player_client=android");
             psi.ArgumentList.Add("-o"); psi.ArgumentList.Add(outputTemplate);
             psi.ArgumentList.Add("--download-archive"); psi.ArgumentList.Add(ArchiveFile);
             psi.ArgumentList.Add("--no-overwrites");
@@ -989,6 +994,8 @@ public class DownloadController : ControllerBase
             psi.ArgumentList.Add("-x");
             psi.ArgumentList.Add("--audio-format"); psi.ArgumentList.Add(format);
             psi.ArgumentList.Add("--audio-quality"); psi.ArgumentList.Add(quality);
+            // YouTube bloquea el cliente web por defecto con HTTP 403 (anti-bot).
+            psi.ArgumentList.Add("--extractor-args"); psi.ArgumentList.Add("youtube:player_client=android");
             psi.ArgumentList.Add("-o"); psi.ArgumentList.Add(outputTemplate);
             psi.ArgumentList.Add("--download-archive"); psi.ArgumentList.Add(ArchiveFile);
             psi.ArgumentList.Add("--no-overwrites");
