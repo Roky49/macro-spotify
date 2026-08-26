@@ -41,6 +41,8 @@ docker compose up --build
 # Swagger: http://localhost:5480/swagger
 ```
 
+> **Raspberry Pi 5 / ARM64:** El Dockerfile usa `TARGETARCH` para bajar `yt-dlp_linux_aarch64` y `deno-aarch64-unknown-linux-gnu.zip`. En la Pi 5 ejecuta `docker compose up --build` con BuildKit activo (por defecto en Docker 23+). Si has forzado una imagen x86_64 previamente, limpia con `docker compose down --rmi all` antes del build.
+
 ## 📁 Estructura
 
 ```

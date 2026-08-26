@@ -14,16 +14,28 @@ RUN ./node_modules/.bin/ng build --configuration=production
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
 
-# yt-dlp + FFmpeg + Deno (JS runtime para extraer de YouTube) para las descargas
+# yt-dlp + FFmpeg + Deno (JS runtime para extraer de YouTube) para las descargas.
+# La Pi 5 es aarch64/ARM64, por lo que descargamos los binarios correctos según
+# la arquitectura objetivo de Docker (x86_64 o arm64).
+ARG TARGETARCH
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ffmpeg ca-certificates curl unzip \
     && rm -rf /var/lib/apt/lists/* \
-    && curl -sL -o /usr/local/bin/yt-dlp https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux \
+    && if [ "$TARGETARCH" = "arm64" ]; then \
+         YTDLP_URL="https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux_aarch64"; \
+         DENO_URL="https://github.com/denoland/deno/releases/latest/download/deno-aarch64-unknown-linux-gnu.zip"; \
+       else \
+         YTDLP_URL="https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux"; \
+         DENO_URL="https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip"; \
+       fi \
+    && curl -sL -o /usr/local/bin/yt-dlp "$YTDLP_URL" \
     && chmod +x /usr/local/bin/yt-dlp \
-    && curl -sL -o /tmp/deno.zip https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip \
+    && curl -sL -o /tmp/deno.zip "$DENO_URL" \
     && unzip -o -q /tmp/deno.zip -d /usr/local/bin/ \
     && rm -f /tmp/deno.zip \
     && chmod +x /usr/local/bin/deno \
+    && yt-dlp --version \
+    && deno --version \
     && mkdir -p /downloads
 
 COPY --from=build /app .

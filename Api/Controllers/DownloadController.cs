@@ -841,7 +841,34 @@ public class DownloadController : ControllerBase
     }
 
     [HttpGet("health")]
-    public IActionResult Health() => Ok(new { status = "healthy", ytDlpInstalled = true, time = DateTime.UtcNow });
+    public IActionResult Health()
+    {
+        var ytDlpInstalled = IsYtDlpInstalled();
+        return Ok(new { status = "healthy", ytDlpInstalled, time = DateTime.UtcNow, downloadDir = DownloadDir });
+    }
+
+    static bool IsYtDlpInstalled()
+    {
+        try
+        {
+            var p = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "yt-dlp",
+                    Arguments = "--version",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                }
+            };
+            p.Start();
+            var version = p.StandardOutput.ReadToEnd().Trim();
+            p.WaitForExit(2000);
+            return p.ExitCode == 0 && !string.IsNullOrEmpty(version);
+        }
+        catch { return false; }
+    }
 
     // ------------------------------------------------------------------
     // Reproductor: servir el archivo de audio por HTTP (con soporte de
@@ -928,7 +955,8 @@ public class DownloadController : ControllerBase
             running = job.Running,
             message = job.Message,
             percent = job.Percent,
-            url = job.Url
+            url = job.Url,
+            lastError = job.LastError
         });
     }
 
